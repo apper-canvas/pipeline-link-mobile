@@ -1,21 +1,52 @@
-import stagesData from "../mockData/stages.json";
-
-let stages = [...stagesData];
-
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+import { getApperClient } from "@/services/apperClient";
 
 export const stageService = {
   async getAll() {
-    await delay(200);
-    return [...stages].sort((a, b) => a.order - b.order);
+    try {
+      const apperClient = getApperClient();
+      const response = await apperClient.fetchRecords('stage_c', {
+        fields: [
+          {"field": {"Name": "Id"}},
+          {"field": {"Name": "name_c"}},
+          {"field": {"Name": "order_c"}},
+          {"field": {"Name": "color_c"}}
+        ],
+        orderBy: [{"fieldName": "order_c", "sorttype": "ASC"}]
+      });
+
+      if (!response.success) {
+        console.error(response.message);
+        return [];
+      }
+
+      return response.data || [];
+    } catch (error) {
+      console.error("Error fetching stages:", error?.response?.data?.message || error.message);
+      return [];
+    }
   },
 
   async getById(id) {
-    await delay(150);
-    const stage = stages.find(s => s.Id === parseInt(id));
-    if (!stage) {
-      throw new Error("Stage not found");
+    try {
+      const apperClient = getApperClient();
+      const response = await apperClient.getRecordById('stage_c', parseInt(id), {
+        fields: [
+          {"field": {"Name": "Id"}},
+          {"field": {"Name": "name_c"}},
+          {"field": {"Name": "order_c"}},
+          {"field": {"Name": "color_c"}}
+        ]
+      });
+
+      if (!response.success) {
+        console.error(response.message);
+        throw new Error("Stage not found");
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching stage ${id}:`, error?.response?.data?.message || error.message);
+      throw error;
     }
-    return { ...stage };
   }
 };
